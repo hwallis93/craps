@@ -1,9 +1,9 @@
 # TODO
-# - Design for the 6 possible roll categories
-# - game.print_state() to print all state
-# - Add basic betting (7/11 win, crap out, button hit, 7 out)
+# - Add basic betting sequence
+# - Improve loop logic in play_game() to be neater
 
 import random
+from bets import PassLineBet
 
 class Game(object):
     """
@@ -12,6 +12,8 @@ class Game(object):
     def __init__(self):
         self.button = 0
         self.seven_out = False
+        self.bets = []
+        self.pot = player_pot
 
     def roll_the_dice(self):
         """
@@ -53,6 +55,13 @@ class Game(object):
 
         elif roll in [2,3,4,5,6,8,9,10,11,12] and self.button_is_on:
             self.process_button_miss()
+
+        self._update_bets(roll)
+
+    def _update_bets(self, roll):
+        for bet in self.bets:
+            winnings = bet.get_winnings(roll, self.point)
+            self.pot += winnings
 
     def process_easy_win(self):
         """
@@ -102,6 +111,21 @@ class Game(object):
         print("Seven out :(")
         self.seven_out = True
 
+    def place_pass_line_bet(self, amount):
+        """
+        Put a bet on the pass line
+        """
+        bet = PassLineBet(amount)
+        self._store_bet(bet)
+
+    def _store_bet(self, bet):
+        """
+        Save off a bet
+        :param bet: A Bet object
+        """
+        self.bets.append(bet)
+        self.pot -= bet.amount
+
 
 def play_game():
     game = Game()
@@ -109,8 +133,7 @@ def play_game():
     while True:
         game.play_round()
 
-        if game.seven_out:
-            break
+    return(game.pot)
 
 if __name__ == "__main__":
     play_game()
