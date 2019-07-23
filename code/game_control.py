@@ -151,9 +151,19 @@ class Point(object):
 
 def play_game(forced_rolls = None):
     game = Game()
+    game.place_pass_line_bet(10)
+    round_count = 0
 
-    while True:
-        game.play_round()
+
+    while not game.seven_out:
+
+        if forced_rolls:
+            forced_roll = forced_rolls[round_count]
+        else:
+            forced_roll = None
+
+        game.play_round(forced_roll)
+        round_count += 1
 
     return(game.pot)
 
