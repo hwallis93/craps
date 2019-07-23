@@ -7,5 +7,5 @@ WORKDIR /craps
 ENV PYTHONPATH="$PYTHONPATH:/craps/code"
 ENV PYTHONDONTWRITEBYTECODE=1
 
-RUN pip install pytest
+RUN pip install -r requirements.txt
 
