@@ -39,5 +39,3 @@ class PassLineBet(Bet):
 
         else:
             return 0
-
-

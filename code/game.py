@@ -1,6 +1,5 @@
 # TODO
-# - Add basic betting sequence
-# - Improve loop logic in play_game() to be neater
+# - Proper logging
 
 import random
 from bets import PassLineBet
@@ -31,22 +30,22 @@ class Game(object):
         print("Rolled {}".format(roll))
 
         if roll in [7,11] and self.point.is_off:
-            self.process_easy_win()
+            self._process_easy_win()
 
         elif roll in [2,3,12] and self.point.is_off:
-            self.process_crap_out()
+            self._process_crap_out()
 
         elif roll in [4,5,6,8,9,10] and self.point.is_off:
-            self.process_button_on(roll)
+            self._process_button_on(roll)
 
         elif roll is 7 and self.point.is_on:
-            self.process_seven_out()
+            self._process_seven_out()
 
         elif roll is self.point.number:
-            self.process_button_hit()
+            self._process_button_hit()
 
         elif roll in [2,3,4,5,6,8,9,10,11,12] and self.point.is_on:
-            self.process_button_miss()
+            self._process_button_miss()
 
         self._update_bets(roll)
 
@@ -55,68 +54,55 @@ class Game(object):
             winnings = bet.get_winnings(roll, self.point)
             self.pot += winnings
 
-    def process_easy_win(self):
+    def _process_easy_win(self):
         """
         Processing when 7 or 11 is rolled with the button off
-        :return:
         """
         print("Everyone wins!")
 
-    def process_crap_out(self):
+    def _process_crap_out(self):
         """
         Processing when 2, 3 or 12 is rolled with the button off
-        :return:
         """
         print("Crap out - everyone loses")
 
-    def process_button_on(self, roll):
+    def _process_button_on(self, roll):
         """
         Processing when the button goes on. I.e. rolled a 4, 5, 6, 8, 9 or 10
         with the button off
-        :return:
         """
         print("Button goes on {}".format(roll))
         self.point.put_on(roll)
 
-    def process_button_miss(self):
+    def _process_button_miss(self):
         """
         Processing when the button is on and will stay on (i.e. any number is
         rolled except the button or 7)
-        :return:
         """
         print("Go again...")
 
-    def process_button_hit(self):
+    def _process_button_hit(self):
         """
         Processing when the button is hit
-        :return:
         """
         print("Button hit - everyone wins!")
         print("Button goes off.")
         self.point.take_off()
 
-    def process_seven_out(self):
+    def _process_seven_out(self):
         """
         Processing when 7 is rolled with the button on
-        :return:
         """
         print("Seven out :(")
         self.seven_out = True
 
-    def place_pass_line_bet(self, amount):
+    def place_bets(self, bets):
         """
-        Put a bet on the pass line
+        Place a bet
         """
-        bet = PassLineBet(amount)
-        self._store_bet(bet)
-
-    def _store_bet(self, bet):
-        """
-        Save off a bet
-        :param bet: A Bet object
-        """
-        self.bets.append(bet)
-        self.pot -= bet.amount
+        for bet in bets:
+            self.bets.append(bet)
+            self.pot -= bet.amount
 
 
 class Point(object):
@@ -149,11 +135,17 @@ class Point(object):
         return number
 
 
-def play_game(forced_rolls = None):
+def play_game(bets, forced_rolls = None):
+    """
+    Helper function to run a whole game, i.e. until the shooter sevens out
+    :param bets: [Bet] - Bets to be placed before the game begins
+    :param forced_rolls: [int] - Fix the outcomes of the dice
+    :return: int - Amount left in the player's pot after the game
+    """
     game = Game()
-    game.place_pass_line_bet(10)
-    round_count = 0
+    game.place_bets(bets)
 
+    round_count = 0
 
     while not game.seven_out:
 
@@ -166,6 +158,3 @@ def play_game(forced_rolls = None):
         round_count += 1
 
     return(game.pot)
-
-if __name__ == "__main__":
-    play_game()
