@@ -1,5 +1,6 @@
 # TODO
 # - Proper logging
+# - Make pot a delta, not anything to do with starting amount
 
 import random
 from bets import PassLineBet

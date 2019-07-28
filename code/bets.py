@@ -1,3 +1,6 @@
+# TODO
+# - Add more bets
+
 # Provides the Bet class
 
 
@@ -9,6 +12,9 @@ class Bet(object):
 
     def __init__(self, amount):
         self.amount = amount
+
+    def __repr__(self):
+        return(self.__class__.__name__ + "({})".format(self.amount))
 
     def get_winnings(self, roll, point):
         pass
@@ -39,3 +45,4 @@ class PassLineBet(Bet):
 
         else:
             return 0
+
