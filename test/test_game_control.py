@@ -18,19 +18,19 @@ def test_game_runs():
 
 def test_easy_win():
     test_games = (
-        ([7, 11, 7, 10, 7], [PassLineBet(10)], 1020),
+        ([7, 11, 7, 10, 7], [PassLineBet(10)], 20),
     )
     verify_games(test_games)
 
 def test_button_hit():
     test_games = (
-        ([4, 4, 10, 7], [PassLineBet(10)], 1000),
-        ([5, 5, 10, 7], [PassLineBet(10)], 1000),
-        ([6, 6, 10, 7], [PassLineBet(10)], 1000),
-        ([8, 8, 10, 7], [PassLineBet(10)], 1000),
-        ([9, 9, 10, 7], [PassLineBet(10)], 1000),
-        ([10, 10, 10, 7], [PassLineBet(10)], 1000),
+        ([4, 4, 10, 7], [PassLineBet(10)], 0),
+        ([5, 5, 10, 7], [PassLineBet(10)], 0),
+        ([6, 6, 10, 7], [PassLineBet(10)], 0),
+        ([8, 8, 10, 7], [PassLineBet(10)], 0),
+        ([9, 9, 10, 7], [PassLineBet(10)], 0),
+        ([10, 10, 10, 7], [PassLineBet(10)], 0),
         ([7, 6, 2, 3, 4, 5, 8, 9, 10, 11, 12, 6, 11, 7, 10, 7],
-         [PassLineBet(10)], 1030),
+         [PassLineBet(10)], 30),
     )
     verify_games(test_games)

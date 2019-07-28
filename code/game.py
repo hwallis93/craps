@@ -1,4 +1,6 @@
 # TODO
+# - Use this to determine amount lost over lots of games for a specific betting
+#   strategy.
 # - Proper logging
 # - Make pot a delta, not anything to do with starting amount
 
@@ -9,11 +11,11 @@ class Game(object):
     """
     Represents a game - i.e. one shooter's worth of rolls
     """
-    def __init__(self, player_pot = 1000):
+    def __init__(self):
         self.point = Point()
         self.seven_out = False
         self.bets = []
-        self.pot = player_pot
+        self.pot = 0
 
     def roll_the_dice(self):
         """
