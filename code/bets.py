@@ -26,7 +26,7 @@ class PassLineBet(Bet):
     - Double your money on 7/11 with come out roll
     - Double your money on point hit
     - Lose your money on 2/3/12 come out roll
-    - Lose your money on 7 when point is on
+    - Loses on 7-out
     """
 
     def get_winnings(self, roll, point):

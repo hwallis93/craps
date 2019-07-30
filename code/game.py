@@ -1,8 +1,12 @@
 # TODO
-# - Use this to determine amount lost over lots of games for a specific betting
-#   strategy.
 # - Proper logging
-# - Make pot a delta, not anything to do with starting amount
+# - File-based bet strategy config into GameManager
+#   - Parse lines
+#   - Update Bets to be created from str
+#   - Add a "verify config" sort of function to check file is well formatted
+# - Multithread GameManager's play_games?
+# - Stats from GameManager
+#   - Number of certain kinds of win etc...
 
 import random
 from bets import PassLineBet
@@ -29,8 +33,6 @@ class Game(object):
         """
 
         roll = forced_roll or self.roll_the_dice()
-        print
-        print("Rolled {}".format(roll))
 
         if roll in [7,11] and self.point.is_off:
             self._process_easy_win()
@@ -61,20 +63,19 @@ class Game(object):
         """
         Processing when 7 or 11 is rolled with the button off
         """
-        print("Everyone wins!")
+        pass
 
     def _process_crap_out(self):
         """
         Processing when 2, 3 or 12 is rolled with the button off
         """
-        print("Crap out - everyone loses")
+        pass
 
     def _process_button_on(self, roll):
         """
         Processing when the button goes on. I.e. rolled a 4, 5, 6, 8, 9 or 10
         with the button off
         """
-        print("Button goes on {}".format(roll))
         self.point.put_on(roll)
 
     def _process_button_miss(self):
@@ -82,21 +83,18 @@ class Game(object):
         Processing when the button is on and will stay on (i.e. any number is
         rolled except the button or 7)
         """
-        print("Go again...")
+        pass
 
     def _process_button_hit(self):
         """
         Processing when the button is hit
         """
-        print("Button hit - everyone wins!")
-        print("Button goes off.")
         self.point.take_off()
 
     def _process_seven_out(self):
         """
         Processing when 7 is rolled with the button on
         """
-        print("Seven out :(")
         self.seven_out = True
 
     def place_bets(self, bets):
@@ -136,6 +134,26 @@ class Point(object):
         else:
             number = self._value
         return number
+
+
+class GameManager(object):
+    """
+    Responsible for determining the outcome of playing multiple games under
+    certain conditions
+    """
+    def play_games(self, num_games, bets):
+        """
+        Play some games with certain bets
+        :param num_games: int
+        :param bets: [Bet]
+        :return: Winnings
+        """
+        winnings = 0
+
+        for _ in range(num_games):
+            winnings += play_game(bets)
+
+        return winnings
 
 
 def play_game(bets, forced_rolls = None):
