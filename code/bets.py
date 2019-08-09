@@ -2,11 +2,21 @@
 # - Add more bets
 #   - Pass Line odds
 #   - Come
-# - Put useful info on InvalidBetAmount
-
+# - Exception explanations should be logs
+# - Have a think about whether bets should be saying they're removed from table
+#   when they lose
 
 # Provides the Bet class
+import logging
+logging.basicConfig(format='%(asctime)s - %(message)s',
+                    datefmt='%d-%b-%y %H:%M:%S')
+
 from textwrap import dedent
+from math import floor
+from collections import namedtuple
+from bet_exceptions import InvalidBetAmount, InvalidBetType, InvalidRoll
+
+BetUpdate = namedtuple("BetUpdate", "winnings removed")
 
 class Bet(object):
     """
@@ -17,12 +27,12 @@ class Bet(object):
     def __init__(self, amount):
         self.amount = amount
         self.bet_type = self.__class__.__name__
-        self._verify_bet()
+        self._verify()
 
     def __repr__(self):
         return(self.bet_type + "({})".format(self.amount))
 
-    def _verify_bet(self):
+    def _verify(self):
         if self.amount % 5 != 0:
 
             explanation = dedent("""
@@ -30,7 +40,11 @@ class Bet(object):
             """)
             raise InvalidBetAmount(self.bet_type, self.amount, explanation)
 
-    def get_winnings(self, roll, point):
+    def update(self, roll, point):
+        """
+        :param point: Point object
+        :return: BetUpdate(int, bool)
+        """
         pass
 
 
@@ -43,22 +57,22 @@ class PassLineBet(Bet):
     - Loses on 7-out
     """
 
-    def get_winnings(self, roll, point):
-
+    def update(self, roll, point):
         if point.is_off and roll in [7, 11]:
-            return self.amount
-
+            winnings = self.amount
         elif roll == point.number:
-            return self.amount
-
-        elif point.is_off and roll in [2, 3, 12]:
-            return -self.amount
-
-        elif point.is_on and roll is 7:
-            return -self.amount
-
+            winnings = self.amount
         else:
-            return 0
+            winnings = 0
+
+        if point.is_off and roll in [2, 3, 12]:
+            removed = True
+        elif point.is_on and roll is 7:
+            removed = True
+        else:
+            removed = False
+
+        return(BetUpdate(winnings, removed))
 
 
 class PassLineOdds(Bet):
@@ -71,21 +85,40 @@ class PassLineOdds(Bet):
       - Point is 6 or 8 => Pays 6-to-5
     - Loses on 7-out
     """
-    pass
+    def __init__(self, pass_line_bet, *args, **kwargs):
+        self.pass_line_bet = pass_line_bet
+        super(PassLineOdds, self).__init__(*args, **kwargs)
 
+    def _verify(self):
+        if not isinstance(self.pass_line_bet, PassLineBet):
+            raise InvalidBetType()
 
-class InvalidBetAmount(Exception):
-    """
-    Raise when attempting to create a bet with a disallowed amount
-    """
-    def __init__(self, bet, amount, info):
-        self.bet = bet
-        self.amount = amount
-        self.info = info
+        if (self.amount % 5 != 0 or
+            self.amount / self.pass_line_bet.amount not in [1, 2, 3, 4, 5]):
+            raise InvalidBetAmount(self.bet_type, self.amount)
 
-    def __str__(self):
-        return(dedent("""
-            Attempted to place a bet with an invalid amount:
-            Bet type - {bet}
-            Amount - {amount} {info}""").format(
-            bet=self.bet,amount=self.amount,info=self.info))
+    def get_winnings(self, roll, point):
+        logging.critical(f"""Calculating PassLineOdds winnings with""")
+        logging.critical(f"Point is on - {point.is_on}")
+        if point.is_on and point.number == roll:
+
+            if point.number in [4, 10]:
+                winnings = 2*self.amount
+
+            elif point.number in [5, 9]:
+                winnings = floor(1.5*self.amount)
+
+            elif point.number in [6, 8]:
+                winnings = floor(1.2*self.amount)
+
+            else:
+                raise InvalidRoll()
+
+        elif point.is_on and roll == 7:
+            winnings = -self.amount
+
+        else:
+            winnings = 0
+
+        return(winnings)
+
