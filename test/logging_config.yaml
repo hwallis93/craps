@@ -7,9 +7,14 @@ handlers:
     class: logging.FileHandler
     level: DEBUG
     formatter: simple
-    filename: test_logs.txt
+    filename: /craps/test/test_logs.txt
+    mode: w+
 loggers:
-  simpleExample:
+  game:
+    level: DEBUG
+    handlers: [file]
+    propagate: no
+  bets:
     level: DEBUG
     handlers: [file]
     propagate: no

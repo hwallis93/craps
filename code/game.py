@@ -1,7 +1,5 @@
 # TODO
-# - Logging:
-#   - Logs indent with each function call
-#   - Import logging neatly from one place
+# - Good way of setting a Game's state
 # - File-based bet strategy config into GameManager
 #   - Parse lines
 #   - Update Bets to be created from str
@@ -14,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 import random
 
+from textwrap import dedent
+from exceptions import InvalidRoll
 
 class Game(object):
     """
@@ -24,10 +24,10 @@ class Game(object):
         self._bets = []
         self._pot = 0
         self._point = Point()
-        self._has_sevened_out = False
+        self.has_sevened_out = False
 
     def __repr__(self):
-        return(self.state)
+        return str(self.state)
 
     @property
     def state(self):
@@ -70,9 +70,12 @@ class Game(object):
         elif roll in [2,3,4,5,6,8,9,10,11,12] and self._point.is_on:
             self._process_button_miss()
 
+        else:
+            raise InvalidRoll(roll)
+
 
     def _update_bets(self, roll):
-        logger.debug(f"Updating bets with roll - {roll}")
+        logger.debug(f"Updating {self._bets} with roll - {roll}")
         for bet in self._bets:
             bet_update = bet.update(roll, self._point)
             winnings, removed = bet_update.winnings, bet_update.removed
@@ -80,10 +83,13 @@ class Game(object):
             if winnings:
                 logger.debug(f"Adding {winnings} to pot")
                 self._pot += winnings
-            elif removed:
-                logger.debug(f"Removing bet from the table - {bet}")
-                self._bets.remove(bet)
+
+            if removed:
+                logger.debug(f"Removed {bet} from table")
                 self._pot -= bet.amount
+            bet.to_be_removed = removed
+
+        self._bets = [bet for bet in self._bets if not bet.to_be_removed]
 
     def _process_easy_win(self):
         logger.debug("Easy win")
@@ -97,7 +103,7 @@ class Game(object):
 
     def _process_seven_out(self):
         logger.debug("Seven out")
-        self._has_sevened_out = True
+        self.has_sevened_out = True
 
     def _process_button_hit(self):
         logger.debug("Point turned off")
@@ -105,7 +111,6 @@ class Game(object):
 
     def _process_button_miss(self):
         logger.debug("Point not hit")
-
 
 class GameManager(object):
     """
@@ -138,7 +143,7 @@ class GameManager(object):
 
     def _play_game(self, bets):
         self.game = Game()
-        while not self.game._has_sevened_out:
+        while not self.game.has_sevened_out:
             self._play_round(bets)
 
         if self.fixed_dice:
@@ -205,22 +210,16 @@ class Point(object):
 
     def __repr__(self):
         if self.is_off:
-            return("Point: Off")
+            return("<Point: Off>")
         else:
-            return(f"Point: {self._value}")
+            return(f"<Point: {self._value}>")
 
     def __eq__(self, other):
         if isinstance(other, Point):
-            if self._value == other._value:
-                return True
-            else:
-                return False
+            return self._value == other._value
 
         elif isinstance(other, int):
-            if self._value == other:
-                return True
-            else:
-                return False
+            return self._value == other
 
         else:
             return False
