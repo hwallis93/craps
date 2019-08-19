@@ -209,6 +209,22 @@ class Point(object):
         else:
             return(f"Point: {self._value}")
 
+    def __eq__(self, other):
+        if isinstance(other, Point):
+            if self._value == other._value:
+                return True
+            else:
+                return False
+
+        elif isinstance(other, int):
+            if self._value == other:
+                return True
+            else:
+                return False
+
+        else:
+            return False
+
     def put_on(self, value):
         logger.debug(f"Point put on {value}")
         self._value = value

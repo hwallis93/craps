@@ -29,7 +29,17 @@ class Bet(object):
         self._verify()
 
     def __repr__(self):
-        return(self.bet_type + "({})".format(self.amount))
+        return f"{self.bet_type}({self.amount})"
+
+    def __eq__(self, other):
+        if (isinstance(other, Bet) and
+            self.bet_type == other.bet_type and
+            self.amount == other.amount):
+            return True
+
+        else:
+            return False
+
 
     def _verify(self):
         if self.amount % 5 != 0:
