@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 from textwrap import dedent
 
 class InvalidBetAmount(Exception):

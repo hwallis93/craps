@@ -9,103 +9,102 @@
 # - Multithread GameManager's play_games?
 # - Stats from GameManager
 #   - Number of certain kinds of win etc...
+import logging
+logger = logging.getLogger(__name__)
 
 import random
-import logging
-from textwrap import dedent
 
-logging.basicConfig(format='%(asctime)s - %(message)s',
-                    datefmt='%d-%b-%y %H:%M:%S')
 
 class Game(object):
     """
     Represents a game - i.e. one shooter's worth of rolls
     """
     def __init__(self):
-        self.point = Point()
-        self.has_sevened_out = False
-        self.bets = []
-        self.pot = 0
+        logger.debug("Creating Game object")
+        self._bets = []
+        self._pot = 0
+        self._point = Point()
+        self._has_sevened_out = False
 
     def __repr__(self):
-        return(dedent(f"""
-        {self.point}
-        Bets: {self.bets}
-        Pot: {self.pot}
-        """))
+        return(self.state)
 
     @property
     def state(self):
         return {
-            "point": self.point,
-            "bets": self.bets,
-            "pot": self.pot
+            "bets": self._bets,
+            "pot": self._pot,
+            "point": self._point,
         }
 
     def place_bets(self, bets):
         """
         Place some bets
         """
-        logging.critical(f"Placing bets: {bets}")
-        for bet in bets:
-            self.bets.append(bet)
+        logger.debug(f"Adding bets {bets}")
+        self._bets += bets
 
 
     def update(self, roll):
         """
         Update game state given a dice roll
         """
-        logging.critical(f"\nStarting update from state {self}"
-                         f"\nwith dice roll {roll}")
-
+        logger.debug(f"Updating game with roll - {roll}")
         self._update_bets(roll)
 
-        if roll in [7,11] and self.point.is_off:
+        if roll in [7,11] and self._point.is_off:
             self._process_easy_win()
 
-        elif roll in [2,3,12] and self.point.is_off:
+        elif roll in [2,3,12] and self._point.is_off:
             self._process_crap_out()
 
-        elif roll in [4,5,6,8,9,10] and self.point.is_off:
+        elif roll in [4,5,6,8,9,10] and self._point.is_off:
             self._process_point_on(roll)
 
-        elif roll is 7 and self.point.is_on:
+        elif roll is 7 and self._point.is_on:
             self._process_seven_out()
 
-        elif roll is self.point.number:
+        elif roll is self._point.number:
             self._process_button_hit()
 
-        elif roll in [2,3,4,5,6,8,9,10,11,12] and self.point.is_on:
+        elif roll in [2,3,4,5,6,8,9,10,11,12] and self._point.is_on:
             self._process_button_miss()
 
+
     def _update_bets(self, roll):
-        for bet in self.bets:
-            bet_update = bet.update(roll, self.point)
+        logger.debug(f"Updating bets with roll - {roll}")
+        for bet in self._bets:
+            bet_update = bet.update(roll, self._point)
             winnings, removed = bet_update.winnings, bet_update.removed
 
             if winnings:
-                self.pot += winnings
+                logger.debug(f"Adding {winnings} to pot")
+                self._pot += winnings
             elif removed:
-                self.bets.remove(bet)
-                self.pot -= bet.amount
+                logger.debug(f"Removing bet from the table - {bet}")
+                self._bets.remove(bet)
+                self._pot -= bet.amount
 
     def _process_easy_win(self):
-        pass
+        logger.debug("Easy win")
 
     def _process_crap_out(self):
-        pass
+        logger.debug("Crap out")
 
     def _process_point_on(self, roll):
-        self.point.put_on(roll)
+        logger.debug("Point goes on")
+        self._point.put_on(roll)
 
     def _process_seven_out(self):
-        self.has_sevened_out = True
+        logger.debug("Seven out")
+        self._has_sevened_out = True
 
     def _process_button_hit(self):
-        self.point.take_off()
+        logger.debug("Point turned off")
+        self._point.take_off()
 
     def _process_button_miss(self):
-        pass
+        logger.debug("Point not hit")
 
 
 class GameManager(object):
@@ -113,18 +112,18 @@ class GameManager(object):
     Responsible for determining the outcome of playing multiple games under
     certain conditions
     """
-    def __init__(self, fixed_dice=None):
-        self.fixed_dice = fixed_dice   #TODO next - pass this multiple fixedDice (maybe make FixedDice list-y?) Need good way of testing overall
-
-    def play_games(self, num_games, bets):
+    def play_games(self, num_games, bets, fixed_dice=None):
         """
         Play some games with certain bets
         :param num_games: int
         :param bets: [Bet]
+        :param fixed_dice: FixedDice
         :return: Winnings
         """
+        self.fixed_dice = fixed_dice
+
         winnings = 0
-        for _ in range(num_games):
+        for game in range(num_games):
             winnings += self._play_game(bets)
 
         return winnings
@@ -136,10 +135,14 @@ class GameManager(object):
         """
         return self.game.state
 
+
     def _play_game(self, bets):
         self.game = Game()
-        while not self.game.has_sevened_out:
+        while not self.game._has_sevened_out:
             self._play_round(bets)
+
+        if self.fixed_dice:
+            self.fixed_dice.next_game()
 
         return self.game.state["pot"]
 
@@ -156,10 +159,8 @@ class GameManager(object):
         Determine whether we want to place more bets. For now, just ensure the
         bets we start with are always replaced
         """
-        logging.critical(f"Game bets - {self.game.bets}\n bets - {bets}")
-        if self.game.state["bets"] != bets:
-            missing_bets = [bet for bet in bets if bet not in self.game.bets]
-            self.game.place_bets(missing_bets)
+        return [bet for bet in bets if bet not in self.game.state["bets"]]
+
 
     def _roll_the_dice(self):
         """
@@ -167,23 +168,31 @@ class GameManager(object):
         """
         if self.fixed_dice:
             roll = self.fixed_dice.get_next_roll()
-            logging.critical(f"Forced to roll {roll}")
         else:
             roll =  random.randint(1,6) + random.randint(1,6)
-            logging.critical(f"Randomly rolled {roll}")
 
         return(roll)
 
 
 class FixedDice(object):
     def __init__(self, rolls):
+        """
+        :param rolls: [[int]] - List of lists of rolls
+        """
         self.rolls = rolls
-        self.count = 0
+        self.game_num = 0
+        self.roll_num = 0
 
     def get_next_roll(self):
-        roll = self.rolls[self.count]
-        self.count += 1
+        roll = self.rolls[self.game_num][self.roll_num]
+        self.roll_num += 1
         return roll
+
+    def next_game(self):
+        """
+        Move on to the next game, i.e. the next set of dice rolls
+        """
+        self.game_num += 1
 
 
 class Point(object):
@@ -191,6 +200,7 @@ class Point(object):
     Represents the point
     """
     def __init__(self):
+        logger.debug("Initalise Point")
         self._value = 0
 
     def __repr__(self):
@@ -200,9 +210,11 @@ class Point(object):
             return(f"Point: {self._value}")
 
     def put_on(self, value):
+        logger.debug(f"Point put on {value}")
         self._value = value
 
     def take_off(self):
+        logger.debug("Point turned off")
         self._value = 0
 
     @property
