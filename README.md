@@ -2,7 +2,7 @@
 
 Emulate a game of craps
 
-# Testing 
+# Testing
 
 Unit tests run with pytest inside a docker container
 

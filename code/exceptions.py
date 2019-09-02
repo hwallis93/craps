@@ -1,7 +1,7 @@
+from textwrap import dedent
+
 import logging
 logger = logging.getLogger(__name__)
-
-from textwrap import dedent
 
 
 class InvalidBetAmount(Exception):
@@ -37,6 +37,7 @@ class InvalidBetType(Exception):
         Detail - {self.detail or "Not specified"}
         """)
 
+
 class InvalidRoll(Exception):
     """
     Raise when a dice roll has an invalid value
@@ -51,4 +52,3 @@ class InvalidRoll(Exception):
         Roll - {self.roll}
         Detail - {self.detail or "No extra detail"}
         """)
-
