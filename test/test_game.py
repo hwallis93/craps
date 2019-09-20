@@ -2,13 +2,12 @@
 
 import pytest
 
-from game import  Game
+from game import Game
 from bets import PassLineBet, PassLineOdds, Bet, ComeBet
 from exceptions import InvalidBetAmount, InvalidBetType, InvalidRoll
 
 
 class Tester:
-
     def verify_game(self, rolls, bets, expected):
         """
         Verify a game ends up in expected state after some rolls
@@ -25,24 +24,22 @@ class Tester:
         if "bets" in expected:
             assert game.state["bets"] == expected["bets"]
 
-class TestPassLineBet(Tester):
 
+class TestPassLineBet(Tester):
     @pytest.fixture
     def bets(self):
         return [PassLineBet(10)]
 
     @pytest.fixture
     def expected_bets(self):
-        return [{
-            "type": "PassLineBet",
-            "amount": 10,
-            "position": "table"
-        }]
+        return [{"type": "PassLineBet", "amount": 10, "position": "table"}]
 
     def test_easy_win_on_comeout_roll(self, bets, expected_bets):
-        self.verify_game(rolls=[7, 11, 11, 7], bets=bets, expected={
-            "pot": 40, "point": 0, "bets": expected_bets})
-
+        self.verify_game(
+            rolls=[7, 11, 11, 7],
+            bets=bets,
+            expected={"pot": 40, "point": 0, "bets": expected_bets},
+        )
 
     def test_point_hit(self, bets, expected_bets):
         expected = {"pot": 10, "point": 0, "bets": expected_bets}
@@ -68,8 +65,9 @@ class TestPassLineBet(Tester):
 
     def test_inaction_when_point_on(self, bets, expected_bets):
         expected = {"pot": 0, "point": 4, "bets": expected_bets}
-        self.verify_game(rolls=[4, 2, 3, 5, 6, 8, 9, 10, 11, 12], bets=bets,
-                         expected=expected)
+        self.verify_game(
+            rolls=[4, 2, 3, 5, 6, 8, 9, 10, 11, 12], bets=bets, expected=expected
+        )
 
     def test_bet_validation(self):
         with pytest.raises(InvalidBetAmount):
@@ -83,7 +81,6 @@ class TestPassLineBet(Tester):
 
 
 class TestPassLineOdds(Tester):
-
     @pytest.fixture
     def bets(self):
         pass_line = PassLineBet(10)
@@ -93,31 +90,41 @@ class TestPassLineOdds(Tester):
     @pytest.fixture
     def expected_bets(self):
         return [
-            {
-                "type": "PassLineBet",
-                "amount": 10,
-                "position": "table"
-            },
-            {
-                "type": "PassLineOdds",
-                "amount": 20,
-                "position": "hand"
-
-            }]
+            {"type": "PassLineBet", "amount": 10, "position": "table"},
+            {"type": "PassLineOdds", "amount": 20, "position": "hand"},
+        ]
 
     def test_point_hit(self, bets, expected_bets):
-        self.verify_game(rolls=[4, 4], bets=bets, expected=
-            {"pot": 50, "bets": expected_bets, "point": 0})
-        self.verify_game(rolls=[5, 5], bets=bets, expected=
-            {"pot": 40, "bets": expected_bets, "point": 0})
-        self.verify_game(rolls=[6, 6], bets=bets, expected=
-            {"pot": 34, "bets": expected_bets, "point": 0})
-        self.verify_game(rolls=[8, 8], bets=bets, expected=
-            {"pot": 34, "bets": expected_bets, "point": 0})
-        self.verify_game(rolls=[9, 9], bets=bets, expected=
-            {"pot": 40, "bets": expected_bets, "point": 0})
-        self.verify_game(rolls=[10, 10], bets=bets, expected=
-            {"pot": 50, "bets": expected_bets, "point": 0})
+        self.verify_game(
+            rolls=[4, 4],
+            bets=bets,
+            expected={"pot": 50, "bets": expected_bets, "point": 0},
+        )
+        self.verify_game(
+            rolls=[5, 5],
+            bets=bets,
+            expected={"pot": 40, "bets": expected_bets, "point": 0},
+        )
+        self.verify_game(
+            rolls=[6, 6],
+            bets=bets,
+            expected={"pot": 34, "bets": expected_bets, "point": 0},
+        )
+        self.verify_game(
+            rolls=[8, 8],
+            bets=bets,
+            expected={"pot": 34, "bets": expected_bets, "point": 0},
+        )
+        self.verify_game(
+            rolls=[9, 9],
+            bets=bets,
+            expected={"pot": 40, "bets": expected_bets, "point": 0},
+        )
+        self.verify_game(
+            rolls=[10, 10],
+            bets=bets,
+            expected={"pot": 50, "bets": expected_bets, "point": 0},
+        )
 
     def test_crap_out(self, bets, expected_bets):
         expected_bets[1]["position"] = "hand"
@@ -152,22 +159,14 @@ class TestPassLineOdds(Tester):
 
 
 class TestComeBet(Tester):
-
     def bets(self):
         return [PassLineBet(10), ComeBet(10)]
 
     def expected_bets(self):
         return [
-            {
-                "type": "PassLineBet",
-                "amount": 10,
-                "position": "table"
-            },
-            {
-                "type": "ComeBet",
-                "amount": 10,
-                "position": None  # Set by test
-            }]
+            {"type": "PassLineBet", "amount": 10, "position": "table"},
+            {"type": "ComeBet", "amount": 10, "position": None},  # Set by test
+        ]
 
     def verify_parametrized_games(self, rolls, pot, come_position):
         expected_bets = self.expected_bets()
@@ -175,34 +174,35 @@ class TestComeBet(Tester):
         expected = {"pot": pot, "bets": expected_bets}
         self.verify_game(rolls=rolls, bets=self.bets(), expected=expected)
 
-    @pytest.mark.parametrize("rolls,pot,come_position",[
-        ([6, 11, 7], 10, "hand"),
-        ([6, 7, 11], 10, "hand"),
-        ([8, 2], -10, "box"),
-        ([9, 3], -10, "box"),
-        ([10, 12], -10, "box")
-    ])
+    @pytest.mark.parametrize(
+        "rolls,pot,come_position",
+        [
+            ([6, 11, 7], 10, "hand"),
+            ([6, 7, 11], 10, "hand"),
+            ([8, 2], -10, "box"),
+            ([9, 3], -10, "box"),
+            ([10, 12], -10, "box"),
+        ],
+    )
     def test_in_come_box(self, rolls, pot, come_position):
         self.verify_parametrized_games(rolls, pot, come_position)
 
-    @pytest.mark.parametrize("rolls,pot,come_position",[
-        ([4, 6, 6], 10, "box"),
-        ([4, 8, 7], -20, "hand"),
-        ([4, 4, 4], 20, "box")
-    ])
+    @pytest.mark.parametrize(
+        "rolls,pot,come_position",
+        [([4, 6, 6], 10, "box"), ([4, 8, 7], -20, "hand"), ([4, 4, 4], 20, "box")],
+    )
     def test_on_number(self, rolls, pot, come_position):
         self.verify_parametrized_games(rolls, pot, come_position)
 
-    @pytest.mark.parametrize("rolls,pot,come_position",[
-        ([7, 11, 4, 6, 8, 4, 8], 30, 6)
-    ])
+    @pytest.mark.parametrize(
+        "rolls,pot,come_position", [([7, 11, 4, 6, 8, 4, 8], 30, 6)]
+    )
     def test_inactivity(self, rolls, pot, come_position):
         self.verify_parametrized_games(rolls, pot, come_position)
 
-
-    @pytest.mark.parametrize("rolls,pot,come_position",[
-        ([3, 4, 3, 7, 3, 4, 7], -30, "hand")
-    ])
+    @pytest.mark.parametrize(
+        "rolls,pot,come_position", [([3, 4, 3, 7, 3, 4, 7], -30, "hand")]
+    )
     def test_removal(self, rolls, pot, come_position):
         self.verify_parametrized_games(rolls, pot, come_position)
 

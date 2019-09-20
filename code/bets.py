@@ -9,6 +9,7 @@
 
 # Provides the Bet class
 import logging
+
 logger = logging.getLogger(__name__)
 
 from math import floor
@@ -20,6 +21,7 @@ class Bet(object):
     Represents a bet that the player desires to make. Can either be on the
     table or waiting to be placed.
     """
+
     def __init__(self, amount):
         self._amount = amount
         self._type = self.__class__.__name__
@@ -31,19 +33,17 @@ class Bet(object):
 
     def __eq__(self, other):
         try:
-            return (self._type == other._type and
-                    self._amount == other._amount and
-                    self._position == other._position)
+            return (
+                self._type == other._type
+                and self._amount == other._amount
+                and self._position == other._position
+            )
         except AttributeError:
             return False
 
     @property
     def state(self):
-        return {
-            "type": self._type,
-            "amount": self._amount,
-            "position": self._position
-        }
+        return {"type": self._type, "amount": self._amount, "position": self._position}
 
     def get_winnings(self, roll, point):
         """
@@ -101,6 +101,7 @@ class PassLineBet(Bet):
     - Lose your money on 2/3/12 come out roll
     - Loses on 7-out
     """
+
     def get_winnings(self, roll, point):
         logger.debug(f"Calculate winnings for {self}")
         winnings = 0
@@ -120,12 +121,10 @@ class PassLineBet(Bet):
             self._position = "table"
 
     def _won(self, roll, point):
-        return (point.is_off and roll in (7, 11) or
-                point.is_on and roll is point.number)
+        return point.is_off and roll in (7, 11) or point.is_on and roll is point.number
 
     def _lost(self, roll, point):
-        return (point.is_off and roll in (2, 3, 12) or
-                point.is_on and roll is 7)
+        return point.is_off and roll in (2, 3, 12) or point.is_on and roll is 7
 
 
 class PassLineOdds(Bet):
@@ -137,6 +136,7 @@ class PassLineOdds(Bet):
       - Point is 6 or 8 => Pays 6-to-5
     - Loses on 7-out
     """
+
     def __init__(self, pass_line_bet, *args, **kwargs):
         self.pass_line_bet = pass_line_bet
         super(PassLineOdds, self).__init__(*args, **kwargs)
@@ -158,14 +158,16 @@ class PassLineOdds(Bet):
 
         if not isinstance(self.pass_line_bet, PassLineBet):
             explanation = (
-                f"Attempted to create without a PassLineBet - "
-                f"{self.pass_line_bet}")
+                f"Attempted to create without a PassLineBet - " f"{self.pass_line_bet}"
+            )
             raise InvalidBetType(self, explanation)
 
         if self._amount / self.pass_line_bet._amount not in (1, 2, 3, 4, 5):
-            explanation = (f"Must be exactly 1-5 times as much as associated "
-                           f"PassLineBet, which has value "
-                           f"{self.pass_line_bet._amount}")
+            explanation = (
+                f"Must be exactly 1-5 times as much as associated "
+                f"PassLineBet, which has value "
+                f"{self.pass_line_bet._amount}"
+            )
             raise InvalidBetAmount(self._type, self._amount, explanation)
 
     def get_winnings(self, roll, point):
@@ -211,6 +213,7 @@ class ComeBet(Bet):
 
     Positions: "hand", "box", 4, 5, 6, 8, 9, 10
     """
+
     def get_winnings(self, roll, point):
         winnings = 0
         if self._won(roll, point):
@@ -236,12 +239,12 @@ class ComeBet(Bet):
             self._position = roll
 
     def _won(self, roll, point):
-        return (self._is_on and roll is self._position or
-                self._in_box and roll in (7, 11))
+        return (
+            self._is_on and roll is self._position or self._in_box and roll in (7, 11)
+        )
 
     def _lost(self, roll, point):
-        return (self._is_on and roll is 7 or
-                self._in_box and roll in (2, 3, 12))
+        return self._is_on and roll is 7 or self._in_box and roll in (2, 3, 12)
 
     @property
     def _is_on(self):

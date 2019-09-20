@@ -11,6 +11,7 @@ import random
 from exceptions import InvalidRoll
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,6 +19,7 @@ class Game(object):
     """
     Represents a game - i.e. one shooter's worth of rolls
     """
+
     def __init__(self, bets):
         logger.info("Creating Game")
 
@@ -60,6 +62,7 @@ class Point(object):
     """
     Represents the point
     """
+
     def __init__(self):
         logger.debug("Initalise Point")
         self._value = 0
