@@ -3,7 +3,7 @@
 import pytest
 
 from game import Game
-from bets import PassLineBet, PassLineOdds, Bet, ComeBet
+from bets import PassLineBet, PassLineOdds, Bet, ComeBet, ComeOdds
 from exceptions import InvalidBetAmount, InvalidBetType, InvalidRoll
 
 
@@ -84,7 +84,7 @@ class TestPassLineOdds(Tester):
     @pytest.fixture
     def bets(self):
         pass_line = PassLineBet(10)
-        odds = PassLineOdds(amount=20, pass_line_bet=pass_line)
+        odds = PassLineOdds(amount=20, parent_bet=pass_line)
         return [pass_line, odds]
 
     @pytest.fixture
@@ -142,20 +142,20 @@ class TestPassLineOdds(Tester):
         pass_line = PassLineBet(20)
 
         with pytest.raises(InvalidBetType):
-            PassLineOdds(amount=10, pass_line_bet=Bet(20))
+            PassLineOdds(amount=10, parent_bet=Bet(20))
         with pytest.raises(InvalidBetType):
-            PassLineOdds(amount=10, pass_line_bet="AAAAAAAAAAAAAAAAAAA")
+            PassLineOdds(amount=10, parent_bet="AAAAAAAAAAAAAAAAAAA")
 
         with pytest.raises(InvalidBetAmount):
-            PassLineOdds(amount=200, pass_line_bet=pass_line)
+            PassLineOdds(amount=200, parent_bet=pass_line)
         with pytest.raises(InvalidBetAmount):
-            PassLineOdds(amount=10, pass_line_bet=pass_line)
+            PassLineOdds(amount=10, parent_bet=pass_line)
         with pytest.raises(InvalidBetAmount):
-            PassLineOdds(amount=0, pass_line_bet=pass_line)
+            PassLineOdds(amount=0, parent_bet=pass_line)
         with pytest.raises(InvalidBetAmount):
-            PassLineOdds(amount=-10, pass_line_bet=pass_line)
+            PassLineOdds(amount=-10, parent_bet=pass_line)
         with pytest.raises(InvalidBetAmount):
-            PassLineOdds(amount=35, pass_line_bet=pass_line)
+            PassLineOdds(amount=35, parent_bet=pass_line)
 
 
 class TestComeBet(Tester):
@@ -165,7 +165,7 @@ class TestComeBet(Tester):
     def expected_bets(self):
         return [
             {"type": "PassLineBet", "amount": 10, "position": "table"},
-            {"type": "ComeBet", "amount": 10, "position": None},  # Set by test
+            {"type": "ComeBet", "amount": 10, "position": None},
         ]
 
     def verify_parametrized_games(self, rolls, pot, come_position):
@@ -207,18 +207,21 @@ class TestComeBet(Tester):
         self.verify_parametrized_games(rolls, pot, come_position)
 
 
-class TestCombinations(Tester):
-    pass
-    # def test_all_bets(self):
-    #     pass_line = PassLineBet(20)
-    #     odds = PassLineOdds(amount=100, pass_line_bet=pass_line)
-    #     come = ComeBet(30)
-    #     initial_bets = [pass_line, odds, come]
-    #     rolls = [7, 4, 11, 3, 6, 11, 4, 7, 5, 3, 7]
-    #
-    #     expected =
-    #
-    #     self.verify_game(rolls, initial_bets, expected)
-    #
-    #     assert game.state["bets"] == []
-    #     assert game.state["pot"] is 140
+class TestComeOdds(Tester):
+    def bets(self):
+        come_bet = ComeBet(10)
+        return [PassLineBet(10), come_bet, ComeOdds(10, parent_bet=come_bet)]
+
+    def expected_bets(self):
+        return [
+            {"type": "PassLineBet"}
+        ]
+
+    def verify_parametrized_games(self, rolls, pot):
+        expected = {"pot": pot, "bets": expected_bets}
+        pass
+
+    @pytest.mark.parametrize("rolls,pot", [([4, 6, 6]), 22])
+    def test_on_number(self):
+        rolls = [4, 6, 6]
+        self.verify_game([], self.bets())

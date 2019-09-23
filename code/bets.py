@@ -93,6 +93,64 @@ class Bet(object):
         pass
 
 
+class Odds(Bet):
+    """
+    Common features for Odds behind a PassLine or Come bet
+    """
+
+    def __init__(self, parent_bet, *args, **kwargs):
+        self.parent_bet = parent_bet
+        super(Odds, self).__init__(*args, **kwargs)
+
+    def __repr__(self):
+        return f"<{self._type}({self._amount}) behind {self.parent_bet}>"
+
+    def __eq__(self, other):
+        if super(Odds, self).__eq__(other):
+            try:
+                return self.parent_bet == other.parent_bet
+            except AttributeError:
+                return False
+        else:
+            return False
+
+    def _verify(self):
+        super(Odds, self)._verify()
+
+        if not isinstance(self.parent_bet, PassLineBet):
+            explanation = (
+                f"Attempted to create behind an incorrect bet - " f"{self.parent_bet}"
+            )
+            raise InvalidBetType(self, explanation)
+
+        if self._amount / self.parent_bet._amount not in (1, 2, 3, 4, 5):
+            explanation = (
+                f"Must be exactly 1-5 times as much as associated "
+                f"PassLineBet, which has value "
+                f"{self.parent_bet._amount}"
+            )
+            raise InvalidBetAmount(self._type, self._amount, explanation)
+
+    def get_winnings(self, roll, point):
+        winnings = 0
+
+        if self._won(roll, point):
+            if point.number in (4, 10):
+                winnings = 2 * self._amount
+            elif point.number in (5, 9):
+                winnings = floor(1.5 * self._amount)
+            elif point.number in (6, 8):
+                winnings = floor(1.2 * self._amount)
+            else:
+                raise ValueError("Inconsistency between win state and roll")
+
+        if self._lost(roll, point):
+            winnings = -self._amount
+
+        logger.debug(f"{self} had winnings {winnings}")
+        return winnings
+
+
 class PassLineBet(Bet):
     """
     Main bet on the pass line (not the odds)
@@ -127,7 +185,7 @@ class PassLineBet(Bet):
         return point.is_off and roll in (2, 3, 12) or point.is_on and roll is 7
 
 
-class PassLineOdds(Bet):
+class PassLineOdds(Odds):
     """
     Odds behind the Pass Line bet
     - Pays out when the point is hit:
@@ -137,61 +195,9 @@ class PassLineOdds(Bet):
     - Loses on 7-out
     """
 
-    def __init__(self, pass_line_bet, *args, **kwargs):
-        self.pass_line_bet = pass_line_bet
-        super(PassLineOdds, self).__init__(*args, **kwargs)
-
-    def __repr__(self):
-        return f"<{self._type}({self._amount}) behind {self.pass_line_bet}>"
-
-    def __eq__(self, other):
-        if super(PassLineOdds, self).__eq__(other):
-            try:
-                return self.pass_line_bet == other.pass_line_bet
-            except AttributeError:
-                return False
-        else:
-            return False
-
-    def _verify(self):
-        super(PassLineOdds, self)._verify()
-
-        if not isinstance(self.pass_line_bet, PassLineBet):
-            explanation = (
-                f"Attempted to create without a PassLineBet - " f"{self.pass_line_bet}"
-            )
-            raise InvalidBetType(self, explanation)
-
-        if self._amount / self.pass_line_bet._amount not in (1, 2, 3, 4, 5):
-            explanation = (
-                f"Must be exactly 1-5 times as much as associated "
-                f"PassLineBet, which has value "
-                f"{self.pass_line_bet._amount}"
-            )
-            raise InvalidBetAmount(self._type, self._amount, explanation)
-
-    def get_winnings(self, roll, point):
-        winnings = 0
-
-        if self._won(roll, point):
-            if point.number in (4, 10):
-                winnings = 2 * self._amount
-            elif point.number in (5, 9):
-                winnings = floor(1.5 * self._amount)
-            elif point.number in (6, 8):
-                winnings = floor(1.2 * self._amount)
-            else:
-                raise ValueError("Inconsistency between win state and roll")
-
-        if self._lost(roll, point):
-            winnings = -self._amount
-
-        logger.debug(f"{self} had winnings {winnings}")
-        return winnings
-
     def maybe_place(self, roll, point, game):
         if self._position == "hand" and point.is_on:
-            logger.info(f"Placed bet {self}")
+            logger.info(f"Placed bet {self} behind {self.parent_bet}")
             self._position = "table"
 
     def _won(self, roll, point):
@@ -253,3 +259,25 @@ class ComeBet(Bet):
     @property
     def _in_box(self):
         return self._position == "box"
+
+
+class ComeOdds(Odds):
+    """
+    Odds behind the Come bet
+    - Pays out when the point is hit:
+      - Come is 4 or 10 => Pays 2-to-1
+      - Come is 5 or 9 => Pays 3-to-2
+      - Come is 6 or 8 => Pays 6-to-5
+    - Loses on 7-out
+    """
+
+    def maybe_place(self, roll, point, game):
+        if self._position == "hand" and self.parent_bet.is_on:
+            logger.info(f"Placed bet {self} behind {self.parent_bet}")
+            self._position = "table"
+
+    def _won(self, roll, point):
+        return self.parent_bet.is_on and roll is self.parent_bet._position
+
+    def _lost(self, roll, point):
+        return self.parent_bet.is_on and roll is 7
